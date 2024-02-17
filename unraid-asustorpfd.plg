@@ -96,7 +96,7 @@ rm -rf $(ls -d &packages;/* | grep -v "${KERNEL_V%%-*}")
 check
 
 if [ ! -f "&plugin;/&name;.png" ]; then
-  wget -q -nc --show-progress --progress=bar:force:noscroll -O "&plugin;/&name;.png" "https://raw.githubusercontent.com/Terebi42/unraid-asustor-pfd/main/Terebi42/images/asustor.png"
+  wget -q -nc --show-progress --progress=bar:force:noscroll -O "&plugin;/&name;.png" "https://raw.githubusercontent.com/Terebi42/unraid-asustor-pfd/main/images/asustor.png"
 fi
 
 #Install icon
