@@ -1,0 +1,197 @@
+<?xml version='1.0' standalone='yes'?>
+<!DOCTYPE PLUGIN [
+  <!ENTITY name      "asustorpfd">
+  <!ENTITY author    "Terebi42">
+  <!ENTITY version   "2024.02.17">
+  <!ENTITY gitURL    "https://raw.githubusercontent.com/&author;/unraid-asustor-pfd/main">
+  <!ENTITY pluginURL "&gitURL;/unraid-asustorpfd.plg">
+  <!ENTITY plugin    "/boot/config/plugins/&name;">
+  <!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
+  <!ENTITY packages  "/boot/config/plugins/&name;/packages">
+]>
+
+<PLUGIN  name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" min="6.12.8" support="https://forums.unraid.net/">
+
+<CHANGES>
+
+###2023.02.17
+- Initial release
+
+</CHANGES>
+
+<FILE Name="&emhttp;/README.md">
+<INLINE>
+**asustor Platform Drivers**
+  
+This package contains the asustor Platform Drivers and installs them, a reboot is required after installing the plugin.  
+  
+Source: https://github.com/mafredri/asustor-platform-driver
+</INLINE>
+</FILE>
+
+<FILE Run="/bin/bash">
+<INLINE>
+
+download() {
+# Download asustor package
+if wget -q -nc --show-progress --progress=bar:force:noscroll -O "&packages;/${KERNEL_V%%-*}/${LAT_PACKAGE}" "${DL_URL}/${LAT_PACKAGE}" 2>/dev/null ; then
+  wget -q -nc --show-progress --progress=bar:force:noscroll -O "&packages;/${KERNEL_V%%-*}/${LAT_PACKAGE}.md5" "${DL_URL}/${LAT_PACKAGE}.md5"
+  if [ "$(md5sum &packages;/${KERNEL_V%%-*}/${LAT_PACKAGE} | awk '{print $1}')" != "$(cat &packages;/${KERNEL_V%%-*}/${LAT_PACKAGE}.md5 | awk '{print $1}')" ]; then
+    echo
+    echo "---CHECKSUM ERROR!---"
+    rm -rf &plugin; &emhttp;
+    if [ ! -f /boot/config/plugins/unraid-asustorpfd.plg ]; then
+      remove_blacklist_it87
+    fi
+    exit 1
+  fi
+  echo
+  echo "-----------Sucessfully downloaded asustor platform driver package-----------"
+else
+  echo
+  echo "---------------Can't download asustor platform driver package---------------"
+  rm -rf &plugin; &emhttp;
+  if [ ! -f /boot/config/plugins/unraid-asustorpfd.plg ]; then
+    remove_blacklist_it87
+  fi
+  exit 1
+fi
+}
+
+check() {
+if ! ls -1 &packages;/${KERNEL_V%%-*}/ | grep -q "${PACKAGE}" ; then
+  LAT_PACKAGE="$(wget -qO- https://api.github.com/repos/Terebi42/unraid-asustor-pfd/releases/tags/${KERNEL_V} | jq -r '.assets[].name' | grep "${PACKAGE}" | grep -E -v '\.md5$' | sort -V | tail -1)"
+  echo
+  echo "----------------Downloading asustor platform driver package!----------------"
+  echo "--------This could take some time, please don't close this window!----------"
+  download
+else
+  echo
+  echo "--------------asustor platform driver package found locally!----------------"
+fi
+}
+
+remove_blacklist_it87() {
+if [ "$(grep -v "blacklist" /boot/config/modprobe.d/it87.conf 2>/dev/null)" ]; then
+  sed -i '/blacklist it87/d' /boot/config/modprobe.d/it87.conf 2>/dev/null
+else
+  rm -rf /boot/config/modprobe.d/it87.conf 2>/dev/null
+fi
+/sbin/modprobe asustor asustor_it87 asustor_gpio_it87 2>/dev/null
+}
+
+# Define Variables
+KERNEL_V="$(uname -r)"
+PACKAGE="asustor_pfd"
+DL_URL="https://github.com/Terebi42/unraid-asustor-pfd/releases/download/$KERNEL_V"
+
+if [ ! -d "&packages;/${KERNEL_V%%-*}" ]; then
+  mkdir -p "&packages;/${KERNEL_V%%-*}"
+fi
+
+# Check for old packages
+rm -rf $(ls -d &packages;/* | grep -v "${KERNEL_V%%-*}")
+
+# Check if asustor pfd package is already downloaded and installed
+check
+
+if [ ! -f "&plugin;/&name;.png" ]; then
+  wget -q -nc --show-progress --progress=bar:force:noscroll -O "&plugin;/&name;.png" "https://raw.githubusercontent.com/Terebi42/unraid-asustor-pfd/main/Terebi42/images/asustor.png"
+fi
+
+#Install icon
+if [ ! -f "&emhttp;/images/&name;.png" ]; then
+  if [ ! -d "&emhttp;/images" ]; then
+    mkdir -p &emhttp;/images
+  fi
+  cp &plugin;/&name;.png &emhttp;/images/
+fi
+
+#Check if it87 module is already blacklisted
+if [ ! "$(grep "blacklist" /boot/config/modprobe.d/it87.conf 2>/dev/null)" ]; then
+  if [ ! -d /boot/config/modprobe.d ]; then
+    mkdir -p /boot/config/modprobe.d
+  fi
+  echo "----Blacklisting it87 module to ensure module driver is working properly----"
+  echo "blacklist it87" >> /boot/config/modprobe.d/it87.conf
+fi
+
+# Check if module is found, if not display message to reboot
+if modinfo asustor 2>/dev/null ; then
+  echo
+  echo "------Nothing to do, asustor platform driver package already installed------"
+  echo
+else
+  echo
+  echo "-------------Please reboot your server to activate the driver!--------------"
+  echo
+fi
+
+#Check if Plugin Update Helper is downloaded and up-to-date
+if [ ! -f &plugin;/plugin_update_helper ]; then
+  wget -q -T 5 -O &plugin;/plugin_update_helper "https://raw.githubusercontent.com/ich777/unraid-plugin_update_helper/master/plugin_update_helper"
+else
+  CUR_V="$(grep -E "Plugin-Update-Helper version:" &plugin;/plugin_update_helper | awk '{print $4}')"
+  if [ ! -s /tmp/update-helper ]; then
+    echo "$(wget -T5 -qO- https://raw.githubusercontent.com/ich777/unraid-plugin_update_helper/master/plugin_update_helper | grep -E "Plugin-Update-Helper version:" | awk '{print $4}')" > /tmp/update-helper
+    AVAIL_V="$(cat /tmp/update-helper)"
+  else
+    AVAIL_V="$(cat /tmp/update-helper)"
+  fi
+  if [ ! -z "$AVAIL_V" ]; then
+    COMPARE="$(sort -V &lt;(echo -e "${AVAIL_V}\n$CUR_V") | tail -1)"
+    if [ "$CUR_V" != "$COMPARE" ]; then
+      wget -q -T 5 -O &plugin;/plugin_update_helper "https://raw.githubusercontent.com/ich777/unraid-plugin_update_helper/master/plugin_update_helper"
+    fi
+  fi
+fi
+
+#Check if Plugin Update Helper is installed and up to date
+if [ ! -f /usr/bin/plugin_update_helper ]; then
+  cp &plugin;/plugin_update_helper /usr/bin/plugin_update_helper
+  chmod +x /usr/bin/plugin_update_helper
+else
+  PLUGIN_V="$(grep -E "Plugin-Update-Helper version:" &plugin;/plugin_update_helper | awk '{print $4}')"
+  INST_V="$(grep -E "Plugin-Update-Helper version:" /usr/bin/plugin_update_helper | awk '{print $4}')"
+  COMPARE="$(sort -V &lt;(echo -e "${PLUGIN_V}\n$INST_V") | tail -1)"
+  if [ "$INST_V" != "$COMPARE" ]; then
+    kill $(ps aux | grep -E "inotifywait -q /boot/changes.txt -e move_self,delete_self" | grep -v "grep -E inotifywait" | awk '{print $2}') 2>/dev/null
+    sleep 1
+    cp &plugin;/plugin_update_helper /usr/bin/plugin_update_helper
+    chmod +x /usr/bin/plugin_update_helper
+  fi
+fi
+
+#Start Plugin Update Helper
+if [ -z "$(ps aux | grep -E "inotifywait -q /boot/changes.txt -e move_self,delete_self" | grep -v "grep -E inotifywait" | awk '{print $2}')" ]; then
+  echo "/usr/bin/plugin_update_helper" | at now -M &gt; /dev/null 2&gt;&amp;1
+fi
+
+</INLINE>
+</FILE>
+
+<FILE Run="/bin/bash" Method="remove">
+<INLINE>
+
+echo "------------------------------------------"
+echo "---Uninstalling asustor platform driver---"
+echo "------------------------------------------"
+# Remove plugin related files
+if [ ! -f /boot/config/plugins/unraid-asustorpfd.plg ]; then
+  if [ "$(grep -v "blacklist" /boot/config/modprobe.d/it87.conf 2>/dev/null)" ]; then
+    sed -i '/blacklist it87/d' /boot/config/modprobe.d/it87.conf 2>/dev/null
+  else
+    rm -rf /boot/config/modprobe.d/it87.conf 2>/dev/null
+  fi
+fi
+rm -rf &emhttp;
+rm -rf &plugin;
+echo
+echo "---------------------------------------------------------------------"
+echo "---asustor platform driver uninstalled, please reboot your server!---"
+echo "---------------------------------------------------------------------"
+echo
+
+</INLINE>
+</FILE>
+</PLUGIN>
