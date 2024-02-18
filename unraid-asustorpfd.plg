@@ -10,7 +10,7 @@
   <!ENTITY packages  "/boot/config/plugins/&name;/packages">
 ]>
 
-<PLUGIN  name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" min="6.12.8" support="https://forums.unraid.net/">
+<PLUGIN  name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" min="6.12.8" support="https://forums.unraid.net/topic/154177-asustor-platform-drivers/">
 
 <CHANGES>
 
