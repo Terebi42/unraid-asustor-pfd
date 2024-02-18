@@ -176,12 +176,10 @@ echo "------------------------------------------"
 echo "---Uninstalling asustor platform driver---"
 echo "------------------------------------------"
 # Remove plugin related files
-if [ ! -f /boot/config/plugins/unraid-asustorpfd.plg ]; then
-  if [ "$(grep -v "blacklist" /boot/config/modprobe.d/it87.conf 2>/dev/null)" ]; then
-    sed -i '/blacklist it87/d' /boot/config/modprobe.d/it87.conf 2>/dev/null
-  else
-    rm -rf /boot/config/modprobe.d/it87.conf 2>/dev/null
-  fi
+if [ "$(grep -v "blacklist" /boot/config/modprobe.d/it87.conf 2>/dev/null)" ]; then
+  sed -i '/blacklist it87/d' /boot/config/modprobe.d/it87.conf 2>/dev/null
+else
+  rm -rf /boot/config/modprobe.d/it87.conf 2>/dev/null
 fi
 rm -rf &emhttp;
 rm -rf &plugin;
