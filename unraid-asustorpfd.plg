@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "asustorpfd">
   <!ENTITY author    "Terebi42">
-  <!ENTITY version   "2024.02.17">
+  <!ENTITY version   "2024.02.18">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/&author;/unraid-asustor-pfd/main">
   <!ENTITY pluginURL "&gitURL;/unraid-asustorpfd.plg">
   <!ENTITY plugin    "/boot/config/plugins/&name;">
@@ -14,7 +14,7 @@
 
 <CHANGES>
 
-###2023.02.17
+###2023.02.18
 - Initial release
 
 </CHANGES>
@@ -77,7 +77,6 @@ if [ "$(grep -v "blacklist" /boot/config/modprobe.d/it87.conf 2>/dev/null)" ]; t
 else
   rm -rf /boot/config/modprobe.d/it87.conf 2>/dev/null
 fi
-/sbin/modprobe asustor asustor_it87 asustor_gpio_it87 2>/dev/null
 }
 
 # Define Variables
